@@ -1,0 +1,23 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build','-t','gcr.io/$PROJECT_ID/my-ktor-app:$SHORT_SHA','.']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push','gcr.io/$PROJECT_ID/my-ktor-app:$SHORT_SHA']
+
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud run deploy my-ktor-app \
+          --image gcr.io/$PROJECT_ID/my-ktor-app:$SHORT_SHA \
+          --region us-central1 \
+          --allow-unauthenticated \
+          --service-account conversadata-sa@${PROJECT_ID}.iam.gserviceaccount.com \
+          --set-secrets=ELASTIC_URL=ELASTIC_URL:latest,ELASTIC_API_KEY=ELASTIC_API_KEY:latest,VERTEX_PROJECT_ID=VERTEX_PROJECT_ID:latest,VERTEX_LOCATION=VERTEX_LOCATION:latest,GCS_BUCKET=GCS_BUCKET:latest \
+          --cpu 1 --memory 512Mi --max-instances 3 --concurrency 80 \
+          --port 8080
+
+images:
+  - 'gcr.io/$PROJECT_ID/my-ktor-app:$SHORT_SHA'
